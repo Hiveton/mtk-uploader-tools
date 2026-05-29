@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$SerialPort = "COM3",
     [string]$DeviceIp = "192.168.1.1",
     [string]$UartTool = ".\mtk_uartboot.exe",
@@ -17,6 +17,9 @@ param(
     [string]$ResultPath = "/result",
     [int]$BromBaudrate = 921600,
     [int]$Bl2Baudrate = 1500000,
+    [int]$UbootBaudrate = 115200,
+    [string]$UbootWebUiKey = "a",
+    [int]$UbootWebUiKeySeconds = 8,
     [int]$WaitDeviceSeconds = 120,
     [int]$HttpTimeoutSeconds = 60,
     [int]$UpdateTimeoutSeconds = 1800,
@@ -126,6 +129,64 @@ function Wait-DeviceWeb {
     throw "Device web UI is not reachable: $BaseUrl"
 }
 
+function Invoke-UbootWebMode {
+    param(
+        [string]$PortName,
+        [int]$Baudrate,
+        [string]$Key,
+        [int]$DurationSeconds
+    )
+
+    if ([string]::IsNullOrWhiteSpace($PortName)) {
+        Write-Info "Skip U-Boot web UI key: no serial port"
+        return
+    }
+
+    Write-Info "Entering U-Boot web UI via $PortName at ${Baudrate}: send '$Key'"
+    $deadline = (Get-Date).AddSeconds($DurationSeconds)
+    $serial = $null
+    $opened = $false
+    try {
+        while ((Get-Date) -lt $deadline -and -not $opened) {
+            try {
+                $serial = [System.IO.Ports.SerialPort]::new($PortName, $Baudrate, [System.IO.Ports.Parity]::None, 8, [System.IO.Ports.StopBits]::One)
+                $serial.ReadTimeout = 500
+                $serial.WriteTimeout = 500
+                $serial.DtrEnable = $true
+                $serial.RtsEnable = $true
+                $serial.Open()
+                $opened = $true
+            } catch {
+                if ($serial) {
+                    $serial.Dispose()
+                    $serial = $null
+                }
+                Start-Sleep -Milliseconds 250
+            }
+        }
+
+        if (-not $opened) {
+            Write-Info "WARN U-Boot web UI key failed: unable to open $PortName"
+            return
+        }
+
+        while ((Get-Date) -lt $deadline) {
+            $serial.Write($Key)
+            Start-Sleep -Milliseconds 250
+        }
+        Write-Info "U-Boot web UI key sent"
+    } catch {
+        Write-Info "WARN U-Boot web UI key failed: $($_.Exception.Message)"
+    } finally {
+        if ($serial -and $serial.IsOpen) {
+            $serial.Close()
+        }
+        if ($serial) {
+            $serial.Dispose()
+        }
+    }
+}
+
 function Invoke-UbootUpload {
     param(
         [string]$Name,
@@ -218,6 +279,7 @@ if (-not $SkipUartBoot) {
         throw "mtk_uartboot failed, exit code: $LASTEXITCODE"
     }
     Write-Info "UART boot finished"
+    Invoke-UbootWebMode -PortName $SerialPort -Baudrate $UbootBaudrate -Key $UbootWebUiKey -DurationSeconds $UbootWebUiKeySeconds
 }
 
 $baseUrl = "http://$DeviceIp/"
@@ -248,3 +310,4 @@ foreach ($step in $steps[$startIndex..($steps.Count - 1)]) {
 }
 
 Write-Info "All download steps finished"
+

@@ -1,0 +1,198 @@
+{
+    "boards": [
+        {
+            "defaultIp": "192.168.1.1",
+            "defaultStartStep": "FIRMWARE",
+            "boardImage": "DownloadTools/assets/board-preview.png",
+            "directoryName": "H87Pro",
+            "displayName": "H87Pro",
+            "firmwareComponents": [
+                {
+                    "file": "bl2.img",
+                    "name": "BL2",
+                    "required": true
+                },
+                {
+                    "file": "gpt.bin",
+                    "name": "GPT",
+                    "required": true
+                },
+                {
+                    "file": "fip.bin",
+                    "name": "FIP",
+                    "required": true
+                },
+                {
+                    "file": "87pro.bin",
+                    "name": "FIRMWARE",
+                    "required": true
+                }
+            ],
+            "firmwareFile": "87pro.bin",
+            "id": "H87Pro",
+            "waitDeviceSeconds": 120
+        },
+        {
+            "defaultIp": "192.168.1.1",
+            "defaultStartStep": "FIRMWARE",
+            "boardImage": "DownloadTools/assets/board-preview.png",
+            "directoryName": "H87AM",
+            "displayName": "H87AM",
+            "firmwareComponents": [
+                {
+                    "file": "bl2.img",
+                    "name": "BL2",
+                    "required": true
+                },
+                {
+                    "file": "gpt.bin",
+                    "name": "GPT",
+                    "required": true
+                },
+                {
+                    "file": "fip.bin",
+                    "name": "FIP",
+                    "required": true
+                },
+                {
+                    "file": "HiGoROS-H5000AM-1-26-05-29-02.bin",
+                    "name": "FIRMWARE",
+                    "required": true
+                }
+            ],
+            "firmwareFile": "HiGoROS-H5000AM-1-26-05-29-02.bin",
+            "id": "H87AM",
+            "waitDeviceSeconds": 120
+        },
+        {
+            "defaultIp": "192.168.1.1",
+            "defaultStartStep": "FIRMWARE",
+            "boardImage": "DownloadTools/assets/board-preview.png",
+            "directoryName": "H5MIFI",
+            "displayName": "H5MIFI",
+            "firmwareComponents": [
+                {
+                    "file": "bl2.img",
+                    "name": "BL2",
+                    "required": true
+                },
+                {
+                    "file": "gpt.bin",
+                    "name": "GPT",
+                    "required": true
+                },
+                {
+                    "file": "fip.bin",
+                    "name": "FIP",
+                    "required": true
+                },
+                {
+                    "file": "87pro.bin",
+                    "name": "FIRMWARE",
+                    "required": true
+                }
+            ],
+            "firmwareFile": "87pro.bin",
+            "id": "H5MIFI",
+            "waitDeviceSeconds": 120
+        },
+        {
+            "defaultIp": "192.168.1.1",
+            "defaultStartStep": "FIRMWARE",
+            "boardImage": "DownloadTools/assets/board-preview.png",
+            "directoryName": "H5000M",
+            "displayName": "H5000M",
+            "firmwareComponents": [
+                {
+                    "file": "bl2.img",
+                    "name": "BL2",
+                    "required": true
+                },
+                {
+                    "file": "gpt.bin",
+                    "name": "GPT",
+                    "required": true
+                },
+                {
+                    "file": "fip.bin",
+                    "name": "FIP",
+                    "required": true
+                },
+                {
+                    "file": "HiGoROS-H5000M-1-26-04-29-09.bin",
+                    "name": "FIRMWARE",
+                    "required": true
+                }
+            ],
+            "firmwareFile": "HiGoROS-H5000M-1-26-04-29-09.bin",
+            "id": "H5000M",
+            "waitDeviceSeconds": 120
+        },
+        {
+            "defaultIp": "192.168.1.1",
+            "defaultStartStep": "FIRMWARE",
+            "boardImage": "DownloadTools/assets/board-preview.png",
+            "directoryName": "H5000W",
+            "displayName": "H5000W",
+            "firmwareComponents": [
+                {
+                    "file": "bl2.img",
+                    "name": "BL2",
+                    "required": true
+                },
+                {
+                    "file": "gpt.bin",
+                    "name": "GPT",
+                    "required": true
+                },
+                {
+                    "file": "fip.bin",
+                    "name": "FIP",
+                    "required": true
+                },
+                {
+                    "file": "HiGoROS-H5000M-1-26-04-29-09.bin",
+                    "name": "FIRMWARE",
+                    "required": true
+                }
+            ],
+            "firmwareFile": "HiGoROS-H5000M-1-26-04-29-09.bin",
+            "id": "H5000W",
+            "waitDeviceSeconds": 120
+        },
+        {
+            "defaultIp": "192.168.1.1",
+            "defaultStartStep": "FIRMWARE",
+            "boardImage": "DownloadTools/assets/board-preview.png",
+            "directoryName": "E87N",
+            "displayName": "E87N",
+            "firmwareComponents": [
+                {
+                    "file": "bl2.img",
+                    "name": "BL2",
+                    "required": true
+                },
+                {
+                    "file": "gpt.bin",
+                    "name": "GPT",
+                    "required": true
+                },
+                {
+                    "file": "fip.bin",
+                    "name": "FIP",
+                    "required": true
+                },
+                {
+                    "file": "HiGoROS-E87N-1-26-05-09-02.bin",
+                    "name": "FIRMWARE",
+                    "required": true
+                }
+            ],
+            "firmwareFile": "HiGoROS-E87N-1-26-05-09-02.bin",
+            "id": "E87N",
+            "waitDeviceSeconds": 120
+        }
+    ],
+    "defaultBoard": "H87Pro",
+    "schemaVersion": 1
+}

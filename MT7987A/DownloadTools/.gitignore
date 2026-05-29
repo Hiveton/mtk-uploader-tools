@@ -1,0 +1,4 @@
+.qt/
+build/
+build-*/
+deploy/

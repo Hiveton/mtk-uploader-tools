@@ -12,6 +12,46 @@ SKIP_UART=0
 DRY_RUN=0
 
 models=(H87Pro H87AM H5MIFI H5000M H5000W E87N)
+CONFIG_PATH="$SCRIPT_DIR/boards.json"
+
+load_models() {
+  if [[ -f "$CONFIG_PATH" ]] && command -v python3 >/dev/null 2>&1; then
+    models=()
+    while IFS= read -r model; do
+      models+=("$model")
+    done < <(python3 - "$CONFIG_PATH" <<'PY'
+import json
+import sys
+with open(sys.argv[1], "r", encoding="utf-8") as fh:
+    data = json.load(fh)
+for board in data.get("boards", []):
+    board_id = board.get("id", "")
+    if board_id:
+        print(board_id)
+PY
+)
+  fi
+}
+
+model_directory() {
+  local model_id="$1"
+  if [[ -f "$CONFIG_PATH" ]] && command -v python3 >/dev/null 2>&1; then
+    python3 - "$CONFIG_PATH" "$model_id" <<'PY'
+import json
+import sys
+with open(sys.argv[1], "r", encoding="utf-8") as fh:
+    data = json.load(fh)
+for board in data.get("boards", []):
+    if board.get("id", "").lower() == sys.argv[2].lower():
+        print(board.get("directoryName") or board.get("id"))
+        break
+else:
+    print(sys.argv[2])
+PY
+    return
+  fi
+  printf '%s\n' "$model_id"
+}
 
 usage() {
   cat <<EOF
@@ -109,8 +149,9 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+load_models
 MODEL="$(resolve_model "$MODEL")"
-TARGET_DIR="$SCRIPT_DIR/$MODEL/mac"
+TARGET_DIR="$SCRIPT_DIR/$(model_directory "$MODEL")/mac"
 TARGET_SCRIPT="$TARGET_DIR/auto-download-mac.sh"
 
 [[ -f "$TARGET_SCRIPT" ]] || die "Missing target script: $TARGET_SCRIPT"

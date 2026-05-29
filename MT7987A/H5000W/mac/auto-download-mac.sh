@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+﻿#!/usr/bin/env bash
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -14,6 +14,9 @@ WEB_FIP="${WEB_FIP:-$SCRIPT_DIR/fip.bin}"
 FIRMWARE="${FIRMWARE:-$SCRIPT_DIR/HiGoROS-H5000M-1-26-04-29-09.bin}"
 BROM_BAUDRATE="${BROM_BAUDRATE:-921600}"
 BL2_BAUDRATE="${BL2_BAUDRATE:-1500000}"
+UBOOT_BAUDRATE="${UBOOT_BAUDRATE:-115200}"
+UBOOT_WEBUI_KEY="${UBOOT_WEBUI_KEY:-a}"
+UBOOT_WEBUI_KEY_SECONDS="${UBOOT_WEBUI_KEY_SECONDS:-8}"
 WAIT_DEVICE_SECONDS="${WAIT_DEVICE_SECONDS:-120}"
 HTTP_TIMEOUT_SECONDS="${HTTP_TIMEOUT_SECONDS:-60}"
 UPDATE_TIMEOUT_SECONDS="${UPDATE_TIMEOUT_SECONDS:-1800}"
@@ -121,6 +124,29 @@ wait_device_web() {
   die "Device web UI is not reachable: $base_url"
 }
 
+enter_uboot_web_mode() {
+  [[ -n "$SERIAL_PORT" ]] || {
+    log "Skip U-Boot web UI key: no serial port"
+    return 0
+  }
+
+  log "Entering U-Boot web UI via $SERIAL_PORT at $UBOOT_BAUDRATE: send '$UBOOT_WEBUI_KEY'"
+  if ! stty -f "$SERIAL_PORT" "$UBOOT_BAUDRATE" cs8 -cstopb -parenb raw -echo 2>/dev/null; then
+    log "WARN U-Boot web UI key failed: unable to configure serial port"
+    return 0
+  fi
+
+  local deadline=$((SECONDS + UBOOT_WEBUI_KEY_SECONDS))
+  while (( SECONDS < deadline )); do
+    if ! printf '%s' "$UBOOT_WEBUI_KEY" > "$SERIAL_PORT" 2>/dev/null; then
+      log "WARN U-Boot web UI key failed: unable to write serial port"
+      return 0
+    fi
+    sleep 0.25
+  done
+  log "U-Boot web UI key sent"
+}
+
 upload_image() {
   local name="$1"
   local page="$2"
@@ -224,6 +250,7 @@ if [[ "$SKIP_UART_BOOT" -eq 0 ]]; then
     --brom-load-baudrate "$BROM_BAUDRATE" \
     --bl2-load-baudrate "$BL2_BAUDRATE"
   log "UART boot finished"
+  enter_uboot_web_mode
 fi
 
 log "Waiting for U-Boot web UI: http://$DEVICE_IP/"
@@ -262,3 +289,4 @@ run_named_step "FIP"
 run_named_step "FIRMWARE"
 
 log "All download steps finished"
+

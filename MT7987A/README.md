@@ -91,10 +91,13 @@ Print the command without running download:
 The normal download flow is:
 
 1. UART boot with `mtk_uartboot.exe`
-2. Upload and flash `bl2.img`
-3. Upload and flash `gpt.bin`
-4. Upload and flash `fip.bin`
-5. Upload and flash the model firmware
+2. Reopen the same serial port at 115200 baud and repeatedly send `a` to force
+   U-Boot Web UI mode
+3. Wait for `http://<device-ip>/`
+4. Upload and flash `bl2.img`
+5. Upload and flash `gpt.bin`
+6. Upload and flash `fip.bin`
+7. Upload and flash the model firmware
 
 Valid `-StartAt` values are:
 

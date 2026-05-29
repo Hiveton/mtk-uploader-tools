@@ -19,6 +19,18 @@ $models = [ordered]@{
     "5" = "H5000W"
     "6" = "E87N"
 }
+$configuredModels = @()
+$configPath = Join-Path $PSScriptRoot "boards.json"
+if (Test-Path -LiteralPath $configPath -PathType Leaf) {
+    $config = Get-Content -LiteralPath $configPath -Raw | ConvertFrom-Json
+    if ($config.boards) {
+        $configuredModels = @($config.boards)
+        $models = [ordered]@{}
+        for ($i = 0; $i -lt $configuredModels.Count; $i++) {
+            $models[[string]($i + 1)] = [string]$configuredModels[$i].id
+        }
+    }
+}
 
 function Write-Menu {
     Write-Host "MT7987A download entry"
@@ -50,8 +62,21 @@ function Resolve-Model {
     throw "Unknown model: $Value. Use one of: $($models.Values -join ', ')"
 }
 
+function Resolve-ModelDirectory {
+    param([string]$ModelId)
+
+    foreach ($configuredModel in $configuredModels) {
+        if ([string]$configuredModel.id -ieq $ModelId) {
+            if (-not [string]::IsNullOrWhiteSpace([string]$configuredModel.directoryName)) {
+                return [string]$configuredModel.directoryName
+            }
+        }
+    }
+    return $ModelId
+}
+
 $selectedModel = Resolve-Model -Value $Model
-$modelDir = Join-Path $PSScriptRoot $selectedModel
+$modelDir = Join-Path $PSScriptRoot (Resolve-ModelDirectory -ModelId $selectedModel)
 $targetScript = Join-Path $modelDir "auto-download.ps1"
 
 if (-not (Test-Path -LiteralPath $targetScript -PathType Leaf)) {
