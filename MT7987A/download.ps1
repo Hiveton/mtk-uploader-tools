@@ -97,6 +97,9 @@ if (-not [string]::IsNullOrWhiteSpace($DeviceIp)) {
 }
 if (-not [string]::IsNullOrWhiteSpace($StartAt)) {
     $arguments += @("-StartAt", $StartAt)
+    if ($StartAt -ne "BL2") {
+        $SkipUartBoot = $true
+    }
 }
 if ($WaitDeviceSeconds -gt 0) {
     $arguments += @("-WaitDeviceSeconds", $WaitDeviceSeconds)

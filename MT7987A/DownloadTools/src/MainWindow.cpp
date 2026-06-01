@@ -90,16 +90,16 @@ QString MainWindow::mt7987aRoot() const
 
 void MainWindow::buildUi()
 {
-    resize(1600, 960);
-    setMinimumSize(1280, 760);
+    resize(1280, 820);
+    setMinimumSize(1120, 720);
     setWindowTitle("Hiveton MTK Downloader Tools");
-    setFont(QFont("Segoe UI", 9));
+    setFont(QFont("Segoe UI", 14));
 
     auto *toolbar = addToolBar("主工具栏");
     toolbar->setObjectName("topBar");
     toolbar->setMovable(false);
-    toolbar->setIconSize(QSize(18, 18));
-    toolbar->setFixedHeight(72);
+    toolbar->setIconSize(QSize(22, 22));
+    toolbar->setFixedHeight(76);
     toolbar->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     auto *refreshAction = toolbar->addAction(style()->standardIcon(QStyle::SP_BrowserReload), "刷新串口");
     auto *scanAction = toolbar->addAction(style()->standardIcon(QStyle::SP_FileDialogContentsView), "扫描设备");
@@ -119,26 +119,26 @@ void MainWindow::buildUi()
     setCentralWidget(central);
 
     auto *root = new QHBoxLayout(central);
-    root->setContentsMargins(14, 12, 14, 10);
-    root->setSpacing(10);
+    root->setContentsMargins(8, 8, 8, 8);
+    root->setSpacing(8);
 
     auto *sidebar = new QFrame(central);
     sidebar->setObjectName("sidebar");
-    sidebar->setFixedWidth(240);
+    sidebar->setFixedWidth(230);
     auto *sidebarLayout = new QVBoxLayout(sidebar);
     sidebarLayout->setContentsMargins(0, 0, 0, 0);
     sidebarLayout->setSpacing(0);
 
     auto *modelsHeader = new QLabel("  板卡型号", sidebar);
     modelsHeader->setObjectName("sidebarHeader");
-    modelsHeader->setMinimumHeight(56);
+    modelsHeader->setMinimumHeight(58);
     m_modelList = new QListWidget(sidebar);
     m_modelList->setObjectName("modelList");
-    m_modelList->setIconSize(QSize(26, 26));
+    m_modelList->setIconSize(QSize(30, 30));
     m_modelCount = new QLabel("0 款板卡", sidebar);
     m_modelCount->setObjectName("modelCount");
     m_modelCount->setAlignment(Qt::AlignCenter);
-    m_modelCount->setMinimumHeight(38);
+    m_modelCount->setMinimumHeight(32);
 
     sidebarLayout->addWidget(modelsHeader);
     sidebarLayout->addWidget(m_modelList, 1);
@@ -148,36 +148,41 @@ void MainWindow::buildUi()
     auto *mainColumn = new QWidget(central);
     auto *main = new QVBoxLayout(mainColumn);
     main->setContentsMargins(0, 0, 0, 0);
-    main->setSpacing(12);
+    main->setSpacing(8);
     root->addWidget(mainColumn, 1);
 
     auto *controlPanel = new QFrame(mainColumn);
     controlPanel->setObjectName("panel");
     auto *control = new QGridLayout(controlPanel);
-    control->setContentsMargins(16, 12, 16, 12);
-    control->setHorizontalSpacing(28);
-    control->setVerticalSpacing(8);
+    control->setContentsMargins(12, 10, 12, 10);
+    control->setHorizontalSpacing(12);
+    control->setVerticalSpacing(6);
 
     m_serialPort = new QComboBox(controlPanel);
     m_serialPort->setEditable(false);
-    m_serialPort->setMaximumWidth(300);
+    m_serialPort->setMinimumWidth(220);
+    m_serialPort->setMaximumWidth(320);
     refreshSerialPorts();
 
     m_deviceIp = new QLineEdit("192.168.1.1", controlPanel);
-    m_deviceIp->setMaximumWidth(210);
+    m_deviceIp->setMinimumWidth(150);
+    m_deviceIp->setMaximumWidth(190);
     m_waitSeconds = new QSpinBox(controlPanel);
     m_waitSeconds->setRange(1, 3600);
     m_waitSeconds->setValue(120);
     m_waitSeconds->setSuffix(" s");
-    m_waitSeconds->setMaximumWidth(110);
+    m_waitSeconds->setMinimumWidth(100);
+    m_waitSeconds->setMaximumWidth(130);
     m_skipUartBoot = new QCheckBox("跳过串口启动", controlPanel);
+    m_skipUartBoot->setMinimumWidth(160);
 
     auto *stepGroup = new QWidget(controlPanel);
     stepGroup->setObjectName("segmented");
     auto *stepLayout = new QHBoxLayout(stepGroup);
     stepLayout->setContentsMargins(0, 0, 0, 0);
     stepLayout->setSpacing(0);
-    for (const auto &step : {"BL2", "GPT", "FIP", "FIRMWARE"}) {
+    const QStringList startSteps = {"BL2", "GPT", "FIP", "FIRMWARE"};
+    for (const auto &step : startSteps) {
         auto *button = new QPushButton(step, stepGroup);
         button->setCheckable(true);
         button->setObjectName("segmentButton");
@@ -190,49 +195,52 @@ void MainWindow::buildUi()
     control->addWidget(m_serialPort, 1, 0);
     control->addWidget(makeDetailLabel("设备 IP"), 0, 1);
     control->addWidget(m_deviceIp, 1, 1);
-    control->addWidget(makeDetailLabel("起始步骤"), 0, 2);
-    control->addWidget(stepGroup, 1, 2);
-    control->addWidget(makeDetailLabel("等待 WebUI"), 0, 3);
-    control->addWidget(m_waitSeconds, 1, 3);
-    control->addWidget(m_skipUartBoot, 1, 4);
+    control->addWidget(makeDetailLabel("等待 WebUI"), 0, 2);
+    control->addWidget(m_waitSeconds, 1, 2);
+    control->addWidget(m_skipUartBoot, 1, 3);
+    control->addWidget(makeDetailLabel("起始步骤"), 2, 0);
+    control->addWidget(stepGroup, 3, 0, 1, 4);
+    control->setColumnStretch(0, 2);
+    control->setColumnStretch(1, 1);
     control->setColumnStretch(2, 1);
+    control->setColumnStretch(3, 1);
     main->addWidget(controlPanel);
 
     auto *content = new QHBoxLayout();
-    content->setSpacing(12);
+    content->setSpacing(8);
     main->addLayout(content);
 
     auto *firmwarePanel = new QFrame(mainColumn);
     firmwarePanel->setObjectName("panel");
-    firmwarePanel->setMaximumWidth(650);
+    firmwarePanel->setMaximumWidth(540);
     auto *firmware = new QVBoxLayout(firmwarePanel);
-    firmware->setContentsMargins(16, 12, 16, 14);
-    firmware->setSpacing(12);
+    firmware->setContentsMargins(12, 10, 12, 10);
+    firmware->setSpacing(8);
     auto *firmwareTitle = new QLabel("固件包", firmwarePanel);
     firmwareTitle->setObjectName("cardTitle");
     firmware->addWidget(firmwareTitle);
 
     auto *firmwareBody = new QHBoxLayout();
-    firmwareBody->setSpacing(26);
+    firmwareBody->setSpacing(14);
     m_boardPreview = new QLabel(firmwarePanel);
     m_boardPreview->setObjectName("boardPreview");
-    m_boardPreview->setFixedSize(104, 104);
+    m_boardPreview->setFixedSize(82, 82);
     m_boardPreview->setAlignment(Qt::AlignCenter);
     const QPixmap preview(boardPreviewPath());
-    m_boardPreview->setPixmap(preview.isNull() ? QPixmap() : preview.scaled(94, 94, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    m_boardPreview->setPixmap(preview.isNull() ? QPixmap() : preview.scaled(74, 74, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     if (preview.isNull()) {
         m_boardPreview->setText("板卡");
     }
     firmwareBody->addWidget(m_boardPreview, 0, Qt::AlignTop);
 
     auto *detail = new QGridLayout();
-    detail->setHorizontalSpacing(16);
-    detail->setVerticalSpacing(8);
+    detail->setHorizontalSpacing(10);
+    detail->setVerticalSpacing(5);
     m_modelName = makeDetailValue("H87AM", "valueBlue");
     m_firmwareName = makeDetailValue("HiGoROS-H5000AM-1-26-05-29-02.bin", "valueStrong");
-    m_firmwareName->setMaximumWidth(320);
+    m_firmwareName->setMaximumWidth(270);
     m_firmwarePath = makeDetailValue("", "valueMuted");
-    m_firmwarePath->setMaximumWidth(320);
+    m_firmwarePath->setMaximumWidth(270);
     m_firmwareSize = makeDetailValue("", "valueMuted");
     m_firmwareModified = makeDetailValue("", "valueMuted");
     m_componentStatus = makeDetailValue("", "valueMuted");
@@ -257,13 +265,13 @@ void MainWindow::buildUi()
     firmware->addLayout(firmwareBody);
 
     auto *actions = new QHBoxLayout();
-    actions->setSpacing(26);
+    actions->setSpacing(14);
     m_startButton = new QPushButton("开始下载", firmwarePanel);
     m_startButton->setObjectName("primaryButton");
-    m_startButton->setMinimumWidth(260);
+    m_startButton->setMinimumWidth(210);
     m_stopButton = new QPushButton("停止下载", firmwarePanel);
     m_stopButton->setObjectName("stopButton");
-    m_stopButton->setMinimumWidth(210);
+    m_stopButton->setMinimumWidth(170);
     actions->addStretch(1);
     actions->addWidget(m_startButton);
     actions->addWidget(m_stopButton);
@@ -274,10 +282,10 @@ void MainWindow::buildUi()
 
     auto *progressPanel = new QFrame(mainColumn);
     progressPanel->setObjectName("panel");
-    progressPanel->setMinimumWidth(430);
+    progressPanel->setMinimumWidth(360);
     auto *progressLayout = new QVBoxLayout(progressPanel);
-    progressLayout->setContentsMargins(16, 12, 16, 14);
-    progressLayout->setSpacing(14);
+    progressLayout->setContentsMargins(12, 10, 12, 10);
+    progressLayout->setSpacing(8);
     auto *progressTitle = new QLabel("烧录进度", progressPanel);
     progressTitle->setObjectName("cardTitle");
     progressLayout->addWidget(progressTitle);
@@ -303,7 +311,7 @@ void MainWindow::buildUi()
     m_progress->setValue(0);
     m_progress->setTextVisible(false);
     progressLayout->addWidget(m_progress);
-    progressLayout->addSpacing(6);
+    progressLayout->addSpacing(2);
     progressLayout->addWidget(makeDetailLabel("状态"));
     m_statusText = new QLabel("就绪。请选择板卡后点击开始下载。", progressPanel);
     m_statusText->setObjectName("warningText");
@@ -314,12 +322,12 @@ void MainWindow::buildUi()
     auto *logPanel = new QFrame(mainColumn);
     logPanel->setObjectName("panel");
     auto *logLayout = new QVBoxLayout(logPanel);
-    logLayout->setContentsMargins(0, 0, 0, 10);
+    logLayout->setContentsMargins(0, 0, 0, 6);
     logLayout->setSpacing(0);
     auto *logHeader = new QFrame(logPanel);
     logHeader->setObjectName("logHeader");
     auto *logHeaderLayout = new QHBoxLayout(logHeader);
-    logHeaderLayout->setContentsMargins(14, 10, 14, 10);
+    logHeaderLayout->setContentsMargins(12, 6, 12, 6);
     logHeaderLayout->addWidget(new QLabel("日志", logHeader));
     logHeaderLayout->addStretch(1);
     m_clearLogButton = new QPushButton("清空", logHeader);
@@ -395,22 +403,22 @@ void MainWindow::applyTheme()
             background: %1;
             color: %2;
             font-family: "Segoe UI", "Microsoft YaHei UI", Arial, sans-serif;
-            font-size: 9pt;
+            font-size: 14pt;
         }
         QToolBar#topBar {
             background: %10;
             border: none;
             border-bottom: 1px solid %3;
-            spacing: 14px;
-            padding: 8px 18px;
+            spacing: 10px;
+            padding: 6px 12px;
         }
         QToolBar#topBar QToolButton {
             color: %2;
             background: transparent;
             border: none;
-            padding: 7px 12px;
-            min-height: 42px;
-            font-size: 9pt;
+            padding: 6px 10px;
+            min-height: 46px;
+            font-size: 13pt;
             font-weight: 500;
         }
         QToolBar#topBar QToolButton:hover { background: %11; border-radius: 4px; }
@@ -420,25 +428,25 @@ void MainWindow::applyTheme()
             border-radius: 6px;
         }
         #sidebarHeader {
-            font-size: 14pt;
+            font-size: 17pt;
             font-weight: 700;
             border-bottom: 1px solid %3;
         }
         #modelCount {
             border-top: 1px solid %3;
             color: %2;
-            font-size: 9pt;
+            font-size: 12pt;
         }
         #modelList {
             background: %4;
             border: none;
             outline: none;
-            font-size: 13pt;
+            font-size: 15pt;
         }
         #modelList::item {
-            min-height: 50px;
-            margin: 5px 10px;
-            padding: 0 16px;
+            min-height: 52px;
+            margin: 4px 8px;
+            padding: 0 12px;
             border-radius: 5px;
             color: %2;
         }
@@ -450,74 +458,74 @@ void MainWindow::applyTheme()
         }
         QLabel { color: %2; }
         QLabel#cardTitle {
-            font-size: 12pt;
+            font-size: 15pt;
             font-weight: 700;
         }
         QLabel#detailLabel {
             color: %2;
-            font-size: 9pt;
+            font-size: 12pt;
             font-weight: 500;
         }
         #valueBlue {
             color: %5;
-            font-size: 11pt;
+            font-size: 13pt;
             font-weight: 700;
         }
         #valueStrong {
             color: %2;
-            font-size: 10pt;
+            font-size: 13pt;
             font-weight: 700;
         }
         #valueMuted {
             color: %6;
-            font-size: 8pt;
+            font-size: 12pt;
             font-weight: 400;
         }
         #successText {
             color: %7;
-            font-size: 11pt;
+            font-size: 13pt;
             font-weight: 700;
         }
         #warningText {
             color: %8;
-            font-size: 10pt;
+            font-size: 13pt;
             font-weight: 700;
         }
         #percentText {
             color: %5;
-            font-size: 15pt;
+            font-size: 18pt;
             font-weight: 800;
         }
         QLineEdit, QComboBox, QSpinBox {
-            min-height: 34px;
+            min-height: 40px;
             border: 1px solid #c8ced6;
             border-radius: 5px;
             background: %13;
             color: %2;
-            padding: 0 12px;
-            font-size: 9pt;
+            padding: 0 10px;
+            font-size: 13pt;
         }
         QComboBox::drop-down, QSpinBox::up-button, QSpinBox::down-button {
             width: 28px;
             border: none;
         }
         QCheckBox {
-            min-height: 34px;
+            min-height: 40px;
             color: %2;
-            font-size: 9pt;
+            font-size: 13pt;
         }
         QCheckBox::indicator {
-            width: 18px;
-            height: 18px;
+            width: 20px;
+            height: 20px;
         }
         QPushButton {
-            min-height: 38px;
+            min-height: 42px;
             border: 1px solid #c8ced6;
             border-radius: 5px;
             background: %13;
             color: %2;
-            padding: 0 18px;
-            font-size: 10pt;
+            padding: 0 14px;
+            font-size: 13pt;
             font-weight: 600;
         }
         QPushButton:hover { background: %11; }
@@ -535,7 +543,7 @@ void MainWindow::applyTheme()
             background: %13;
         }
         #flatButton {
-            min-height: 28px;
+            min-height: 32px;
             border: none;
             background: transparent;
             color: %6;
@@ -547,7 +555,7 @@ void MainWindow::applyTheme()
             background: %13;
         }
         #segmentButton {
-            min-width: 58px;
+            min-width: 72px;
             border: none;
             border-left: 1px solid #d9dfe7;
             border-radius: 0;
@@ -564,12 +572,12 @@ void MainWindow::applyTheme()
             border-radius: 5px;
         }
         #stepCircleDone, #stepCircleActive {
-            min-width: 38px;
-            max-width: 38px;
-            min-height: 38px;
-            max-height: 38px;
-            border-radius: 19px;
-            font-size: 12pt;
+            min-width: 46px;
+            max-width: 46px;
+            min-height: 46px;
+            max-height: 46px;
+            border-radius: 23px;
+            font-size: 14pt;
             font-weight: 800;
             qproperty-alignment: AlignCenter;
         }
@@ -585,13 +593,13 @@ void MainWindow::applyTheme()
         }
         #stepName {
             color: %2;
-            font-size: 9pt;
+            font-size: 12pt;
             font-weight: 700;
         }
-        #stepDone { color: %7; font-size: 8pt; }
-        #stepActive { color: %5; font-size: 8pt; font-weight: 700; }
+        #stepDone { color: %7; font-size: 12pt; }
+        #stepActive { color: %5; font-size: 12pt; font-weight: 700; }
         QProgressBar {
-            min-height: 16px;
+            min-height: 18px;
             border: 1px solid #c8ced6;
             border-radius: 4px;
             background: #e9eef4;
@@ -611,17 +619,17 @@ void MainWindow::applyTheme()
             color: %16;
             border: none;
             font-family: Consolas, Menlo, monospace;
-            font-size: 9pt;
-            padding: 10px 12px;
+            font-size: 12pt;
+            padding: 8px 10px;
         }
         QStatusBar#bottomStatus {
             background: %10;
             border-top: 1px solid %3;
             color: %2;
-            font-size: 9pt;
+            font-size: 12pt;
         }
         QStatusBar#bottomStatus QLabel {
-            padding: 0 18px;
+            padding: 0 12px;
             color: %2;
         }
         #readyText {
@@ -678,7 +686,7 @@ DownloadOptions MainWindow::currentOptions() const
     options.deviceIp = m_deviceIp->text();
     options.startAt = m_startStep;
     options.waitDeviceSeconds = m_waitSeconds->value();
-    options.skipUartBoot = m_skipUartBoot->isChecked();
+    options.skipUartBoot = m_skipUartBoot->isChecked() || m_startStep != "BL2";
     return options;
 }
 
@@ -735,7 +743,7 @@ void MainWindow::updateModelDetails()
     const QPixmap boardPhoto(boardPreviewPath(model));
     if (!boardPhoto.isNull()) {
         m_boardPreview->setText(QString());
-        m_boardPreview->setPixmap(boardPhoto.scaled(94, 94, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+        m_boardPreview->setPixmap(boardPhoto.scaled(74, 74, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     } else {
         m_boardPreview->setText("板卡");
         m_boardPreview->setPixmap(QPixmap());
@@ -748,22 +756,35 @@ void MainWindow::updateModelDetails()
     m_deviceIp->setText(model.defaultIp);
     m_waitSeconds->setValue(model.waitDeviceSeconds);
     selectStartStep(model.defaultStartStep.isEmpty() ? "FIRMWARE" : model.defaultStartStep);
+    updatePackageStatus();
+}
 
+bool MainWindow::componentNeededForStart(const QString &componentName) const
+{
+    const QStringList steps = {"BL2", "GPT", "FIP", "FIRMWARE"};
+    const int startIndex = qMax(0, steps.indexOf(m_startStep));
+    const int componentIndex = steps.indexOf(componentName);
+    return componentIndex < 0 || componentIndex >= startIndex;
+}
+
+void MainWindow::updatePackageStatus()
+{
+    const auto model = selectedModel();
     QStringList componentLines;
     QStringList missingRequiredComponents;
     bool allRequiredComponentsExist = true;
     for (const auto &component : model.firmwareComponents) {
         const bool exists = m_repository.componentExists(model, component);
-        if (component.required && !exists) {
+        const bool needed = componentNeededForStart(component.name);
+        if (component.required && needed && !exists) {
             allRequiredComponentsExist = false;
             missingRequiredComponents << component.name;
         }
-        componentLines << QString("%1: %2").arg(component.name, exists ? "OK" : "缺失");
+        componentLines << QString("%1: %2").arg(component.name, needed ? (exists ? "OK" : "缺失") : "跳过");
     }
     m_componentStatus->setText(componentLines.join("  "));
 
-    const bool exists = m_repository.firmwareExists(model);
-    const bool packageOk = exists && allRequiredComponentsExist;
+    const bool packageOk = allRequiredComponentsExist;
     m_fileStatus->setText(packageOk ? "OK" : "缺失");
     m_fileStatus->setObjectName(packageOk ? "successText" : "warningText");
     m_fileStatus->style()->unpolish(m_fileStatus);
@@ -780,7 +801,15 @@ void MainWindow::selectStartStep(const QString &stepName)
     for (auto *button : m_startStepButtons) {
         button->setChecked(button->text() == stepName);
     }
+    const bool webOnlyStart = stepName != "BL2";
+    if (webOnlyStart) {
+        m_skipUartBoot->setChecked(true);
+    } else {
+        m_skipUartBoot->setChecked(false);
+    }
+    m_skipUartBoot->setEnabled(!webOnlyStart);
     setStepState(stepName);
+    updatePackageStatus();
 }
 
 void MainWindow::setStepState(const QString &stepName)
@@ -804,7 +833,7 @@ void MainWindow::setStepState(const QString &stepName)
 
 void MainWindow::onStartDownload()
 {
-    if (!m_skipUartBoot->isChecked() && !m_serialPort->isEnabled()) {
+    if (m_startStep == "BL2" && !m_skipUartBoot->isChecked() && !m_serialPort->isEnabled()) {
         appendLog("未选择串口。请连接 USB 串口适配器，或启用跳过串口启动。");
         m_statusText->setText("无法开始：未选择串口。");
         return;
@@ -843,7 +872,12 @@ void MainWindow::refreshSerialPorts()
     const auto ports = QSerialPortInfo::availablePorts();
     for (const auto &port : ports) {
         const QString label = port.description().isEmpty() ? port.portName() : port.portName() + " - " + port.description();
-        m_serialPort->addItem(label, port.portName());
+#ifdef Q_OS_WIN
+        const QString portPath = port.portName();
+#else
+        const QString portPath = port.systemLocation();
+#endif
+        m_serialPort->addItem(label, portPath);
     }
     if (m_serialPort->count() == 0) {
         m_serialPort->addItem("未发现串口");

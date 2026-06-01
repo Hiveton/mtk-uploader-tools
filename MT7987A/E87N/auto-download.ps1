@@ -261,12 +261,11 @@ function Invoke-UbootUpdate {
     Write-Info "UPDATE DONE $Name in ${elapsed}s"
 }
 
-$webBl2Path = Resolve-ExistingFile -Primary $WebBl2
-$webGptPath = Resolve-ExistingFile -Primary $WebGpt
-$webFipPath = Resolve-ExistingFile -Primary $WebFip
-$firmwarePath = Resolve-ExistingFile -Primary $Firmware
-
 Write-Info "MT7987A auto download started"
+
+if ($StartAt -ne "BL2") {
+    $SkipUartBoot = $true
+}
 
 if (-not $SkipUartBoot) {
     $uartToolPath = Resolve-ExistingFile -Primary $UartTool
@@ -288,10 +287,10 @@ Wait-DeviceWeb -BaseUrl $baseUrl -TimeoutSeconds $WaitDeviceSeconds
 Write-Info "U-Boot web UI is reachable"
 
 $steps = @(
-    @{ Name = "BL2"; Page = $Bl2Page; File = $webBl2Path },
-    @{ Name = "GPT"; Page = $GptPage; File = $webGptPath },
-    @{ Name = "FIP"; Page = $FipPage; File = $webFipPath },
-    @{ Name = "FIRMWARE"; Page = $FirmwarePage; File = $firmwarePath }
+    @{ Name = "BL2"; Page = $Bl2Page; File = $WebBl2 },
+    @{ Name = "GPT"; Page = $GptPage; File = $WebGpt },
+    @{ Name = "FIP"; Page = $FipPage; File = $WebFip },
+    @{ Name = "FIRMWARE"; Page = $FirmwarePage; File = $Firmware }
 )
 
 $startIndex = 0
@@ -303,7 +302,8 @@ for ($i = 0; $i -lt $steps.Count; $i++) {
 }
 
 foreach ($step in $steps[$startIndex..($steps.Count - 1)]) {
-    Invoke-UbootUpload -Name $step.Name -Page $step.Page -FilePath $step.File
+    $stepFilePath = Resolve-ExistingFile -Primary $step.File
+    Invoke-UbootUpload -Name $step.Name -Page $step.Page -FilePath $stepFilePath
     Invoke-UbootUpdate -Name $step.Name
     Start-Sleep -Seconds $AfterUploadDelaySeconds
     Wait-DeviceWeb -BaseUrl $baseUrl -TimeoutSeconds $WaitDeviceSeconds

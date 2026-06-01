@@ -50,10 +50,12 @@ private:
     void buildUi();
     void populateModels();
     void updateModelDetails();
+    void updatePackageStatus();
     void updateRunningState(bool running);
     void updateDownloadControls(bool running, const QString &statusText);
     void applyTheme();
     bool isDarkTheme() const;
+    bool componentNeededForStart(const QString &componentName) const;
     void setStepState(const QString &stepName);
     void selectStartStep(const QString &stepName);
     QWidget *makeStepNode(const QString &stepName, int number);

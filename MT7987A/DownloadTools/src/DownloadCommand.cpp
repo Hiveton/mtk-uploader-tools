@@ -38,10 +38,9 @@ DownloadCommand DownloadCommandBuilder::build(const BoardModelInfo &model, const
         command.arguments << "-DryRun";
     }
 #else
-    command.program = "/bin/bash";
+    command.program = QDir(m_root).filePath("download-mac.sh");
     command.workingDirectory = m_root;
     command.arguments = {
-        QDir(m_root).filePath("download-mac.sh"),
         "--model", model.id,
     };
     if (!options.serialPort.trimmed().isEmpty()) {

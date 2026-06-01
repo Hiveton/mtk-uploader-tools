@@ -74,6 +74,10 @@ die() {
   exit 1
 }
 
+lowercase() {
+  printf '%s' "$1" | tr '[:upper:]' '[:lower:]'
+}
+
 resolve_model() {
   local value="$1"
   local model
@@ -95,7 +99,7 @@ resolve_model() {
   fi
 
   for model in "${models[@]}"; do
-    if [[ "${model,,}" == "${value,,}" ]]; then
+    if [[ "$(lowercase "$model")" == "$(lowercase "$value")" ]]; then
       printf '%s\n' "$model"
       return
     fi
@@ -160,6 +164,9 @@ cmd=("$TARGET_SCRIPT")
 [[ -z "$SERIAL" ]] || cmd+=(--serial "$SERIAL")
 [[ -z "$IP" ]] || cmd+=(--ip "$IP")
 [[ -z "$START_AT" ]] || cmd+=(--start-at "$START_AT")
+if [[ -n "$START_AT" && "$(lowercase "$START_AT")" != "bl2" ]]; then
+  SKIP_UART=1
+fi
 [[ "$SKIP_UART" -eq 0 ]] || cmd+=(--skip-uart)
 
 printf 'Model: %s\n' "$MODEL"

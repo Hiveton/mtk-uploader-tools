@@ -12,8 +12,8 @@ WEB_BL2="${WEB_BL2:-$SCRIPT_DIR/bl2.img}"
 WEB_GPT="${WEB_GPT:-$SCRIPT_DIR/gpt.bin}"
 WEB_FIP="${WEB_FIP:-$SCRIPT_DIR/fip.bin}"
 FIRMWARE="${FIRMWARE:-$SCRIPT_DIR/HiGoROS-H5000M-1-26-04-29-09.bin}"
-BROM_BAUDRATE="${BROM_BAUDRATE:-921600}"
-BL2_BAUDRATE="${BL2_BAUDRATE:-1500000}"
+BROM_BAUDRATE="${BROM_BAUDRATE:-460800}"
+BL2_BAUDRATE="${BL2_BAUDRATE:-460800}"
 UBOOT_BAUDRATE="${UBOOT_BAUDRATE:-115200}"
 UBOOT_WEBUI_KEY="${UBOOT_WEBUI_KEY:-a}"
 UBOOT_WEBUI_KEY_SECONDS="${UBOOT_WEBUI_KEY_SECONDS:-8}"
@@ -23,6 +23,16 @@ UPDATE_TIMEOUT_SECONDS="${UPDATE_TIMEOUT_SECONDS:-1800}"
 AFTER_UPLOAD_DELAY_SECONDS="${AFTER_UPLOAD_DELAY_SECONDS:-8}"
 SKIP_UART_BOOT=0
 START_AT="${START_AT:-BL2}"
+CURRENT_CHILD_PID=""
+
+cleanup_child() {
+  if [[ -n "$CURRENT_CHILD_PID" ]] && kill -0 "$CURRENT_CHILD_PID" 2>/dev/null; then
+    kill "$CURRENT_CHILD_PID" 2>/dev/null || true
+    wait "$CURRENT_CHILD_PID" 2>/dev/null || true
+  fi
+}
+
+trap cleanup_child TERM INT EXIT
 
 log() {
   printf '[%s] %s\n' "$(date '+%H:%M:%S')" "$*"
@@ -224,17 +234,17 @@ case "$START_AT" in
   *) die "--start-at must be BL2, GPT, FIP, or FIRMWARE" ;;
 esac
 
-require_file "$UART_TOOL"
-require_file "$RAM_BL2"
-require_file "$WEB_BL2"
-require_file "$WEB_GPT"
-require_file "$WEB_FIP"
-require_file "$FIRMWARE"
-UART_FIP="$(resolve_uart_fip)"
+if [[ "$START_AT" != "BL2" ]]; then
+  SKIP_UART_BOOT=1
+fi
 
 log "MT7987A auto download started"
 
 if [[ "$SKIP_UART_BOOT" -eq 0 ]]; then
+  require_file "$UART_TOOL"
+  require_file "$RAM_BL2"
+  UART_FIP="$(resolve_uart_fip)"
+
   if [[ -z "$SERIAL_PORT" ]]; then
     SERIAL_PORT="$(detect_serial_port)"
   fi
@@ -242,13 +252,17 @@ if [[ "$SKIP_UART_BOOT" -eq 0 ]]; then
   chmod +x "$UART_TOOL" 2>/dev/null || true
 
   log "UART boot via $SERIAL_PORT"
+  log "UART baud: BROM=$BROM_BAUDRATE BL2=$BL2_BAUDRATE"
   "$UART_TOOL" \
     -s "$SERIAL_PORT" \
     -p "$RAM_BL2" \
     -a \
     -f "$UART_FIP" \
     --brom-load-baudrate "$BROM_BAUDRATE" \
-    --bl2-load-baudrate "$BL2_BAUDRATE"
+    --bl2-load-baudrate "$BL2_BAUDRATE" &
+  CURRENT_CHILD_PID=$!
+  wait "$CURRENT_CHILD_PID"
+  CURRENT_CHILD_PID=""
   log "UART boot finished"
   enter_uboot_web_mode
 fi
@@ -269,15 +283,19 @@ run_named_step() {
 
   case "$step_name" in
     BL2)
+      require_file "$WEB_BL2"
       run_step "BL2" "bl2.html" "bl2" "$WEB_BL2"
       ;;
     GPT)
+      require_file "$WEB_GPT"
       run_step "GPT" "gpt.html" "gpt" "$WEB_GPT"
       ;;
     FIP)
+      require_file "$WEB_FIP"
       run_step "FIP" "uboot.html" "fip" "$WEB_FIP"
       ;;
     FIRMWARE)
+      require_file "$FIRMWARE"
       run_step "FIRMWARE" "" "firmware" "$FIRMWARE"
       ;;
   esac
@@ -289,4 +307,3 @@ run_named_step "FIP"
 run_named_step "FIRMWARE"
 
 log "All download steps finished"
-
