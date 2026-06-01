@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -17,6 +17,7 @@ BL2_BAUDRATE="${BL2_BAUDRATE:-460800}"
 UBOOT_BAUDRATE="${UBOOT_BAUDRATE:-115200}"
 UBOOT_WEBUI_KEY="${UBOOT_WEBUI_KEY:-a}"
 UBOOT_WEBUI_KEY_SECONDS="${UBOOT_WEBUI_KEY_SECONDS:-8}"
+UBOOT_WEBUI_ENTER_INTERVAL_SECONDS="${UBOOT_WEBUI_ENTER_INTERVAL_SECONDS:-3}"
 WAIT_DEVICE_SECONDS="${WAIT_DEVICE_SECONDS:-120}"
 HTTP_TIMEOUT_SECONDS="${HTTP_TIMEOUT_SECONDS:-60}"
 UPDATE_TIMEOUT_SECONDS="${UPDATE_TIMEOUT_SECONDS:-1800}"
@@ -24,11 +25,16 @@ AFTER_UPLOAD_DELAY_SECONDS="${AFTER_UPLOAD_DELAY_SECONDS:-8}"
 SKIP_UART_BOOT=0
 START_AT="${START_AT:-BL2}"
 CURRENT_CHILD_PID=""
+KEY_SENDER_PID=""
 
 cleanup_child() {
   if [[ -n "$CURRENT_CHILD_PID" ]] && kill -0 "$CURRENT_CHILD_PID" 2>/dev/null; then
     kill "$CURRENT_CHILD_PID" 2>/dev/null || true
     wait "$CURRENT_CHILD_PID" 2>/dev/null || true
+  fi
+  if [[ -n "$KEY_SENDER_PID" ]] && kill -0 "$KEY_SENDER_PID" 2>/dev/null; then
+    kill "$KEY_SENDER_PID" 2>/dev/null || true
+    wait "$KEY_SENDER_PID" 2>/dev/null || true
   fi
 }
 
@@ -134,27 +140,52 @@ wait_device_web() {
   die "Device web UI is not reachable: $base_url"
 }
 
-enter_uboot_web_mode() {
+start_uboot_web_mode_sender() {
   [[ -n "$SERIAL_PORT" ]] || {
     log "Skip U-Boot web UI key: no serial port"
     return 0
   }
 
-  log "Entering U-Boot web UI via $SERIAL_PORT at $UBOOT_BAUDRATE: send '$UBOOT_WEBUI_KEY'"
+  log "Entering U-Boot web UI via $SERIAL_PORT at $UBOOT_BAUDRATE: send '$UBOOT_WEBUI_KEY' + Enter every ${UBOOT_WEBUI_ENTER_INTERVAL_SECONDS}s"
   if ! stty -f "$SERIAL_PORT" "$UBOOT_BAUDRATE" cs8 -cstopb -parenb raw -echo 2>/dev/null; then
     log "WARN U-Boot web UI key failed: unable to configure serial port"
     return 0
   fi
 
-  local deadline=$((SECONDS + UBOOT_WEBUI_KEY_SECONDS))
-  while (( SECONDS < deadline )); do
-    if ! printf '%s' "$UBOOT_WEBUI_KEY" > "$SERIAL_PORT" 2>/dev/null; then
-      log "WARN U-Boot web UI key failed: unable to write serial port"
-      return 0
-    fi
-    sleep 0.25
-  done
-  log "U-Boot web UI key sent"
+  local send_seconds="$UBOOT_WEBUI_KEY_SECONDS"
+  if (( WAIT_DEVICE_SECONDS > send_seconds )); then
+    send_seconds="$WAIT_DEVICE_SECONDS"
+  fi
+
+  (
+    local deadline=$((SECONDS + send_seconds))
+    local next_enter_at=$((SECONDS + UBOOT_WEBUI_ENTER_INTERVAL_SECONDS))
+    while (( SECONDS < deadline )); do
+      if ! printf '%s' "$UBOOT_WEBUI_KEY" > "$SERIAL_PORT" 2>/dev/null; then
+        log "WARN U-Boot web UI key failed: unable to write serial port"
+        return 0
+      fi
+      if (( SECONDS >= next_enter_at )); then
+        if ! printf '\r' > "$SERIAL_PORT" 2>/dev/null; then
+          log "WARN U-Boot web UI enter key failed: unable to write serial port"
+          return 0
+        fi
+        next_enter_at=$((SECONDS + UBOOT_WEBUI_ENTER_INTERVAL_SECONDS))
+      fi
+      sleep 0.25
+    done
+  ) &
+  KEY_SENDER_PID=$!
+  log "U-Boot web UI key sender started (pid=$KEY_SENDER_PID, ${send_seconds}s)"
+}
+
+stop_uboot_web_mode_sender() {
+  if [[ -n "$KEY_SENDER_PID" ]] && kill -0 "$KEY_SENDER_PID" 2>/dev/null; then
+    kill "$KEY_SENDER_PID" 2>/dev/null || true
+    wait "$KEY_SENDER_PID" 2>/dev/null || true
+    log "U-Boot web UI key sender stopped"
+  fi
+  KEY_SENDER_PID=""
 }
 
 upload_image() {
@@ -264,11 +295,12 @@ if [[ "$SKIP_UART_BOOT" -eq 0 ]]; then
   wait "$CURRENT_CHILD_PID"
   CURRENT_CHILD_PID=""
   log "UART boot finished"
-  enter_uboot_web_mode
+  start_uboot_web_mode_sender
 fi
 
 log "Waiting for U-Boot web UI: http://$DEVICE_IP/"
 wait_device_web
+stop_uboot_web_mode_sender
 log "U-Boot web UI is reachable"
 
 started=0

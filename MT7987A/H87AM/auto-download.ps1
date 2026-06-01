@@ -134,7 +134,8 @@ function Invoke-UbootWebMode {
         [string]$PortName,
         [int]$Baudrate,
         [string]$Key,
-        [int]$DurationSeconds
+        [int]$DurationSeconds,
+        [string]$ProbeUrl
     )
 
     if ([string]::IsNullOrWhiteSpace($PortName)) {
@@ -172,6 +173,14 @@ function Invoke-UbootWebMode {
 
         while ((Get-Date) -lt $deadline) {
             $serial.Write($Key)
+            if (-not [string]::IsNullOrWhiteSpace($ProbeUrl)) {
+                try {
+                    Invoke-WebRequest -Uri $ProbeUrl -UseBasicParsing -TimeoutSec 2 | Out-Null
+                    Write-Info "U-Boot web UI detected while sending key"
+                    return
+                } catch {
+                }
+            }
             Start-Sleep -Milliseconds 250
         }
         Write-Info "U-Boot web UI key sent"
@@ -263,6 +272,8 @@ function Invoke-UbootUpdate {
 
 Write-Info "MT7987A auto download started"
 
+$baseUrl = "http://$DeviceIp/"
+
 if ($StartAt -ne "BL2") {
     $SkipUartBoot = $true
 }
@@ -278,10 +289,9 @@ if (-not $SkipUartBoot) {
         throw "mtk_uartboot failed, exit code: $LASTEXITCODE"
     }
     Write-Info "UART boot finished"
-    Invoke-UbootWebMode -PortName $SerialPort -Baudrate $UbootBaudrate -Key $UbootWebUiKey -DurationSeconds $UbootWebUiKeySeconds
+    Invoke-UbootWebMode -PortName $SerialPort -Baudrate $UbootBaudrate -Key $UbootWebUiKey -DurationSeconds ([Math]::Max($UbootWebUiKeySeconds, $WaitDeviceSeconds)) -ProbeUrl $baseUrl
 }
 
-$baseUrl = "http://$DeviceIp/"
 Write-Info "Waiting for U-Boot web UI: $baseUrl"
 Wait-DeviceWeb -BaseUrl $baseUrl -TimeoutSeconds $WaitDeviceSeconds
 Write-Info "U-Boot web UI is reachable"
